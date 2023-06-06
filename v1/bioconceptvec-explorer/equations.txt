@@ -1,0 +1,14 @@
+Expression: Gene_6406_29106 - SNP_rs34886328 + Gene_100628162 | Solution: Chemical_MESH_C104804 | Similarity: 0.8048298358917236
+Expression: SNP_rs12208888 - ProteinMutation_p_F194Y + Gene_818533 | Solution: Chemical_MESH_C582233 | Similarity: 0.7965010404586792
+Expression: ProteinMutation_p_G204S_RS_104894173 - Gene_835_840_842 + Chemical_MESH_C034706 | Solution: ProteinMutation_p_H316V | Similarity: 0.8085697889328003
+Expression: ProteinMutation_p_G44S - Chemical_MESH_C587588 + Gene_107_108_109_196883_111_112_113_114_115 | Solution: DNAMutation_g_12804T_C | Similarity: 0.7596518993377686
+Expression: ProteinMutation_p_E53K_RS_863224013 - ProteinMutation_p_C307S + Species_38736 | Solution: ProteinMutation_p_C352Y_RS_193922566 | Similarity: 0.7632861137390137
+Expression: ProteinMutation_p_R199Q_RS_200850756 - Chemical_MESH_C000334 + Gene_492771 | Solution: SNP_rs2284018 | Similarity: 0.8110538721084595
+Expression: ProteinMutation_p_H75W - SNP_rs139012426 + ProteinMutation_p_E345R | Solution: ProteinMutation_p_T213M | Similarity: 0.7513421773910522
+Expression: ProteinMutation_p_W13G_RS_139548132 - Gene_110834_18518 + Chemical_MESH_C473631 | Solution: DNAMutation_c_544G_A | Similarity: 0.7720743417739868
+Expression: DNAMutation_g_14206C_T - Chemical_MESH_C070377 + Chemical_MESH_C083387 | Solution: ProteinMutation_p_D708G | Similarity: 0.7573469877243042
+Expression: Gene_66125 - Gene_24974 + Chemical_MESH_C115212 | Solution: ProteinMutation_p_C228G | Similarity: 0.7569252848625183
+Expression: Gene_6561_26266 - Gene_397852 + DNAMutation_c_456C_T | Solution: ProteinMutation_p_E260D_RS_536638039 | Similarity: 0.7781540155410767
+Expression: Gene_482071 - ProteinMutation_p_S430C + SNP_rs111033253 | Solution: DNAMutation_c_T_C_RS_2242245 | Similarity: 0.7670618295669556
+Expression: ProteinMutation_c_457_458insG - Chemical_MESH_C000598870 + Gene_304388_65129_65131 | Solution: DNAMutation_c_C_T_RS_2069718 | Similarity: 0.7531883120536804
+Expression: ProteinMutation_p_R229Q_RS_2278911 - Gene_613729 + ProteinMutation_p_D568A | Solution: SNP_rs876174537 | Similarity: 0.7815011739730835

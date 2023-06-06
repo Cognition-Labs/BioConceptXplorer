@@ -1,0 +1,12 @@
+__pycache__/
+.vscode/
+datasets/
+embeddings/
+venv/
+*.bin
+notes.md
+.env
+mappings/description_embeddings
+mappings/
+*.pkl
+*.bin
