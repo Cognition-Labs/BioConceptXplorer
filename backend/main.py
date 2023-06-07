@@ -1,3 +1,4 @@
+from itertools import islice
 import time
 import os
 import pandas as pd
@@ -8,47 +9,59 @@ import pickle
 from tqdm import tqdm
 import modal
 
-# shared volume for concept embeddings and mapping
-volume = modal.SharedVolume().persist("embeddings-cache-vol")
-CACHE_PATH = "/root/cache/"
-shared_volumes = {CACHE_PATH: volume}
 
-# mounts for env file
-mounts = [
-    modal.Mount.from_local_file(".env", remote_path="/root/.env"),
-    modal.Mount.from_local_file("embeddings/concept_glove.json", remote_path="/root/cache/concept_glove.json"),
-]
-
+DATA_PATH = "/root/embeddings"
 image = modal.Image.debian_slim().pip_install_from_requirements("requirements.txt")
 
+mounts = [
+    modal.Mount.from_local_file(".env", remote_path="/root/.env"),
+    modal.Mount.from_local_directory("embeddings", remote_path=DATA_PATH),
+]
+
 stub = modal.Stub(name="bioconceptexplorer", mounts=mounts, image=image)
-stub.concept_embeddings = modal.Dict()
-stub.concept_list = modal.Dict()
-stub.embedding_values = modal.Dict()
-stub.concept_descriptions = modal.Dict()
-stub.rev_concept_descriptions = modal.Dict()
 
-@stub.function(shared_volumes=shared_volumes)
 def load_embeddings_data():
-    print("Running locally: ", modal.is_local())
     print("Cold start\n- loading embeddings from shared volume cache...")
-    embeddings = open("/root/cache/concept_glove.json").readlines()
-    print(len(embeddings))
-
-    with open("/root/cache/concept_glove.json") as json_file:
-        stub.concept_embeddings = json.load(json_file)
+    with open(os.path.join(DATA_PATH, "concept_glove.json")) as json_file:
+        concept_glove = json.load(json_file)
         print("loaded embeddings file")
-        stub.concept_list = {"data": list(stub.concept_embeddings.keys())}
+        concept_list = list(concept_glove.keys())
         print("loaded concept list")
-        stub.embedding_values = {"data": np.array(list(stub.concept_embeddings.values()), dtype=np.float32)}
+        embedding_values = np.array(list(concept_glove.values()), dtype=np.float32)
         print("loaded embedding values")
+    return concept_glove, concept_list, embedding_values
 
+def load_bert_embeddings():
+    sentence_embeddings = np.load(os.path.join(DATA_PATH, "description_embeddings.npy"))
+    return sentence_embeddings
+
+def load_bert_sentences():
+    with open(os.path.join(DATA_PATH, "sentences.txt")) as f:
+        sentences = f.readlines()
+    return sentences
+
+concept_glove, concept_list, embedding_values = load_embeddings_data()
+sentence_embeddings = load_bert_embeddings()
+sentences = load_bert_sentences()
+
+@stub.function()
+@modal.web_endpoint(method="GET")
+def bert_query(query: str, top_k: int = 10):
+    similarities = np.dot(sentence_embeddings, sentence_embeddings[concept_list.index(query)])
+    top_k_idx = np.argsort(similarities)[::-1][:top_k]
+    return [sentences[idx] for idx in top_k_idx]
+
+@stub.function()
+@modal.web_endpoint(method="GET")
+def compute_expression(expression: list, top_k: int = 10) -> dict:
+    pass
+
+@stub.function()
+@modal.web_endpoint(method="GET")
+def free_var_search(query: str, top_k: int = 10):
+    pass
 
 @stub.function()
 @modal.web_endpoint(method="GET")
 def heartbeat():
-    print([i for i in os.walk("/root")])
-    print(open("/root/.env").read())
-    embeddings = open("/root/cache/concept_glove.json").readlines()
-    print(len(embeddings))
     return "OK"
