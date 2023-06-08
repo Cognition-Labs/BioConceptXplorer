@@ -1,12 +1,17 @@
 import streamlit as st
-import requests
+import base64
 import pandas as pd
+import numpy as np
 
 def process_input(user_input):
-    url = f'/process_input'
-    data = {"user_input": user_input}
-    r = requests.post(url, json=data)
-    options = r.json()
+    # Simulate server response
+    options = [
+        '1: Processed concept 1 | Similarity: 0.85',
+        '2: Processed concept 2 | Similarity: 0.84',
+        '3: Processed concept 3 | Similarity: 0.83',
+        '4: Processed concept 4 | Similarity: 0.82',
+        '5: Processed concept 5 | Similarity: 0.81',
+    ]
     return options
 
 def select_option(options):
@@ -16,10 +21,16 @@ def select_option(options):
     return selected_option
 
 def get_free_var_search(extracted_string, threshold):
-    url = f'/free_var_search'
-    data = {"extracted_string": extracted_string, "threshold": threshold}
-    r = requests.post(url, json=data)
-    df = pd.DataFrame(r.json())
+    # Simulate server response
+    data = {
+        'Equation': ['A + B - C', 'D + E - F', 'G + H - I'],
+        'Concept': ['Concept 1', 'Concept 2', 'Concept 3'],
+        'Similarity': [0.95, 0.94, 0.93],
+        'Equation_mapped': ['A mapped + B mapped - C mapped', 'D mapped + E mapped - F mapped', 'G mapped + H mapped - I mapped'],
+        'Concept Description': ['Description 1', 'Description 2', 'Description 3'],
+        'Rationale': ['Rationale 1', 'Rationale 2', 'Rationale 3']
+    }
+    df = pd.DataFrame(data)
     return df
 
 # Set up the Streamlit page
@@ -44,12 +55,10 @@ if user_input:
                 df = get_free_var_search(extracted_string, threshold)
 
                 # Display a download button
-                st.download_button(
-                    label="Download CSV",
-                    data=df.to_csv(index=False),
-                    file_name="res.csv",
-                    mime="text/csv",
-                )
+                csv = df.to_csv(index=False).encode()
+                b64 = base64.b64encode(csv).decode()
+                href = f'<a href="data:file/csv;base64,{b64}" download="res.csv">Download CSV File</a>'
+                st.markdown(href, unsafe_allow_html=True)
 
                 # Show the dataframe
                 st.dataframe(df)
