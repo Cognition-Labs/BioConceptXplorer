@@ -35,9 +35,7 @@ def bert_query(query: str, top_k: int = 10):
     query_vector = model.encode([query])
     sims = cosine_similarity(query_vector, BERT_embeddings)[0]
     indices = np.argsort(sims)[::-1][:top_k]
-    options = {
-        BERT_sentences[i].strip("\n"): float(sims[j]) for j, i in enumerate(indices)
-    }
+    options = [(BERT_sentences[i].strip("\n"), float(sims[i])) for i in indices]
     return options
 
 
@@ -208,4 +206,17 @@ def free_var_search(
 
 
 if __name__ == "__main__":
-    print(free_var_search("Gene_6853"), file=open("output.csv", "w+"))
+    print(bert_query("dog cancer", 10))
+    # dog = get_BCV_vector("Species_9615")
+    # asbestos = get_BCV_vector("Chemical_MESH_D001194")
+    # dog_cancer = get_BCV_vector("Disease_MESH_D055752")
+
+    # sims = cosine_similarity((dog + asbestos).reshape(1, -1), BCV_values)
+    # indices = np.argpartition(sims, -20, axis=1)[:, -20:].copy()
+    # print(indices)
+    # print(sims[0][indices[0]])
+    # results = BCV_list[indices[0]]
+    # print(results)
+
+    # for i in results:
+    #     print(map_BCV_to_description(i), sims[0][np.where(BCV_list == i)[0][0]])
