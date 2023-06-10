@@ -1,55 +1,79 @@
 import streamlit as st
 import requests
 import pandas as pd
+from typing import List, Tuple
 
-def process_input(user_input):
-    url = f'/process_input'
-    data = {"user_input": user_input}
-    r = requests.post(url, json=data)
-    options = r.json()
-    return options
+def process_input(user_input: str) -> List[str]:
+    url = f'https://shreyj1729--bioconceptvecxplorer-bert-query.modal.run/?query={user_input}&top_k=5'
+    r = requests.get(url)
+    options: List[Tuple[str, float]] = r.json()
+    options_str: List[str] = [f"{concept}| Similarity: {score}" for concept, score in options]
+    if not options_str:
+        options_str = ["No similar concepts found. Please try again."]
+    return options_str
 
-def select_option(options):
-    selected_option = st.selectbox("Select a similar concept:", options)
-    if selected_option:
-        st.write("You selected:", selected_option)
-    return selected_option
+def get_free_var_search(query, sim_threshold):
+    base_url = 'https://shreyj1729--bioconceptvecxplorer-free-var-search.modal.run'
+    n_samples = 100
+    use_gpt = 'gpt-4'
+    params = {
+        'query': query,
+        'n': n_samples,
+        'sim_threshold': sim_threshold,
+        'use_gpt': use_gpt
+    }
 
-def get_free_var_search(extracted_string, threshold):
-    url = f'/free_var_search'
-    data = {"extracted_string": extracted_string, "threshold": threshold}
-    r = requests.post(url, json=data)
-    df = pd.DataFrame(r.json())
-    return df
+    try:
+        response = requests.get(base_url, params=params)
+        response.raise_for_status()
+
+        json_response = response.json()
+
+        if json_response and isinstance(json_response, list):
+            df = pd.DataFrame(json_response)
+            return df
+        else:
+            print("Error: Unexpected response format.")
+            return None
+    except requests.exceptions.RequestException as e:
+        print("Error: Request failed:", e)
+        return None
 
 # Set up the Streamlit page
 st.title("BioConceptVec Exploration App")
 
-# Get the user's input
-user_input = st.text_input("Enter a concept:")
+if 'user_input' not in st.session_state:
+    st.session_state['user_input'] = ''
 
-if user_input:
-    options = process_input(user_input)
-    if options:
-        option = select_option(options)
-        if option:
-            start_index = option.find(":") + 1
-            end_index = option.find("|")
-            extracted_string = option[start_index:end_index].strip()
-            st.write(extracted_string)
-            # Make an input box from 0.0 to 1.0 by increments of 0.1 multiselect
-            threshold = st.multiselect("Select a threshold:", [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7])
-            if threshold:
-                threshold = threshold[0]
-                df = get_free_var_search(extracted_string, threshold)
+user_input = st.text_input("Enter a concept:", value=st.session_state['user_input'])
 
-                # Display a download button
-                st.download_button(
-                    label="Download CSV",
-                    data=df.to_csv(index=False),
-                    file_name="res.csv",
-                    mime="text/csv",
-                )
+if st.button('Process Concept') or st.session_state['user_input'] != '':
+    st.session_state['user_input'] = user_input
+    st.session_state['options'] = process_input(user_input)
 
-                # Show the dataframe
-                st.dataframe(df)
+    if 'options' in st.session_state:
+        selected_option = st.selectbox("Select a similar concept:", st.session_state['options'])
+        if st.button('Confirm Concept'):
+            st.session_state['selected_option'] = selected_option
+
+        if 'selected_option' in st.session_state:
+            end_index = st.session_state['selected_option'].find("|") - 1
+            extracted_string = st.session_state['selected_option'][:end_index].strip()
+
+            st.write(f"You selected: {extracted_string}")
+
+            threshold = st.selectbox("Select a threshold:", [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
+            if st.button('Submit Threshold'):
+                st.session_state['threshold'] = threshold
+
+                df = get_free_var_search(extracted_string, st.session_state['threshold'])
+                if df is not None:
+                    st.write("Here are the results:")
+                    st.download_button(
+                        label="Download CSV",
+                        data=df.to_csv(index=False),
+                        file_name="res.csv",
+                        mime="text/csv",
+                    )
+
+                    st.dataframe(df)

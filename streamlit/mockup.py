@@ -43,7 +43,7 @@ if user_input:
     options = process_input(user_input)
     if options:
         option = select_option(options)
-        if option:
+        if option and option != "No similar concepts found. Please try again.":
             start_index = option.find(":") + 1
             end_index = option.find("|")
             extracted_string = option[start_index:end_index].strip()
