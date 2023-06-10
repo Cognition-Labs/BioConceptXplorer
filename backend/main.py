@@ -206,17 +206,17 @@ def free_var_search(
 
 
 if __name__ == "__main__":
-    print(bert_query("dog cancer", 10))
-    # dog = get_BCV_vector("Species_9615")
-    # asbestos = get_BCV_vector("Chemical_MESH_D001194")
-    # dog_cancer = get_BCV_vector("Disease_MESH_D055752")
+    # print(bert_query("dog cancer", 10))
+    dog = get_BCV_vector("Species_9615")
+    asbestos = get_BCV_vector("Chemical_MESH_D001194")
+    dog_cancer = get_BCV_vector("Disease_MESH_D055752")
 
-    # sims = cosine_similarity((dog + asbestos).reshape(1, -1), BCV_values)
-    # indices = np.argpartition(sims, -20, axis=1)[:, -20:].copy()
-    # print(indices)
-    # print(sims[0][indices[0]])
-    # results = BCV_list[indices[0]]
-    # print(results)
+    sims = cosine_similarity((dog + asbestos).reshape(1, -1), BCV_values)
+    indices = np.argpartition(sims, -20, axis=1)[:, -20:].copy()
+    print(indices)
+    print(sims[0][indices[0]])
+    results = BCV_list[indices[0]]
+    print(results)
 
-    # for i in results:
-    #     print(map_BCV_to_description(i), sims[0][np.where(BCV_list == i)[0][0]])
+    for i in results:
+        print(map_BCV_to_description(i), sims[0][np.where(BCV_list == i)[0][0]])
