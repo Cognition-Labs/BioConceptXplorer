@@ -35,8 +35,8 @@ def is_everything_initialized():
 
 def init_BCVs():
     global BCV_list, BCV_values, BCV_descriptions, rev_BCV_descriptions
-    start = time.time()
     print("- Loading BCVs...", end="")
+    start = time.time()
     BCV_list, BCV_values, BCV_descriptions = (
         np.load(os.path.join(DATA_PATH, "BCV_list.npy")),
         np.load(os.path.join(DATA_PATH, "BCV_values.npy")),
@@ -49,21 +49,21 @@ def init_BCVs():
 
 def init_BERTs():
     global BERT_sentences, BERT_embeddings
-    start = time.time()
     print("- Loading BERT embeddings...", end="")
+    start = time.time()
     BERT_embeddings = np.load(os.path.join(DATA_PATH, "BERT_embeddings.npy"))
     print(f"Done in {time.time() - start} seconds!")
 
-    start = time.time()
     print("- Loading BERT sentences...", end="")
+    start = time.time()
     BERT_sentences = np.load(os.path.join(DATA_PATH, "BERT_sentences.npy"))
     print(f"Done in {time.time() - start} seconds!")
 
 
 def init_model():
     global model
-    start = time.time()
     print("- Loading model...", end="")
+    start = time.time()
     model = SentenceTransformer("bert-base-nli-mean-tokens")
     print(f"Done in {time.time() - start} seconds!")
 

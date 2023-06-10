@@ -1,19 +1,15 @@
-import sys
+from enum import Enum
 import time
 import time
-import os
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
 import modal
 from sklearn.metrics.pairwise import cosine_similarity
-from core.init import (
-    init_all_if_needed,
-)
+from core.init import init_all_if_needed
+from core.chatgpt import load_openai_key, gpt_rationale, GPTVersion
 
-
-# init all the data then load it
-init_all_if_needed()
+init_all_if_needed()  # init all the data then load it
 from core.init import (
     model,
     BERT_embeddings,
@@ -24,11 +20,12 @@ from core.init import (
 )
 
 DATA_PATH = "/root/embeddings"
+ENV_PATH = "/root/.env"
 image = modal.Image.debian_slim().pip_install_from_requirements("requirements.txt")
 
 mounts = [
-    modal.Mount.from_local_file(".env", remote_path=os.path.join(DATA_PATH, ".env")),
-    modal.Mount.from_local_dir("embeddings", remote_path="/root/embeddings"),
+    modal.Mount.from_local_file(".env", remote_path=ENV_PATH),
+    modal.Mount.from_local_dir("embeddings", remote_path=DATA_PATH),
 ]
 
 stub = modal.Stub(name="BioConceptVecXplorer", mounts=mounts, image=image)
@@ -61,7 +58,7 @@ def get_BCV_vector(query: str):
 def map_BCV_to_description(unmapped: str):
     mapped = BCV_descriptions[unmapped] if unmapped in BCV_descriptions else "N/A"
     if type(mapped) == list:
-        mapped = " aka ".join(mapped)
+        mapped = " or ".join(mapped)
     return mapped
 
 
@@ -72,26 +69,35 @@ where Q is the query and B, C, D are free variables.
 """
 
 
-@stub.function(cpu=2, memory=2048, container_idle_timeout=300)
+@stub.function(cpu=2, memory=2048, container_idle_timeout=300, keep_warm=1)
 @modal.web_endpoint(method="GET")
-def free_var_search(query: str, n: int = 1_000, sim_threshold: float = 0.75):
-    print(f"----- Performing free variable search for {query}... -----")
+def free_var_search(
+    query: str,
+    n: int = 1_000,
+    sim_threshold: float = 0.80,
+    use_gpt: GPTVersion = GPTVersion.NONE,
+):
+    q = query.strip("\n")
+    if q not in BCV_list:
+        return {
+            "error": f"Query {q} not found in BioConceptVectors. Please try another query."
+        }
+    q_mapped = map_BCV_to_description(q)
+    print(f"----- Performing free variable search for {q_mapped} ({query})... -----")
     start_freevar = time.time()
 
     # Get the query vector from BCV embeddings
-    q = query.strip("\n")
     q_vector = get_BCV_vector(q)
-    q_mapped = map_BCV_to_description(q)
 
     # Perform the free variable search
     # - generate n random equations (B, C) pairs by picking indices from 0-->len(BCV_list)
-    start = time.time()
     print(f"- Generating {n} equation samples...", end=" ", flush=True)
+    start = time.time()
     equation_indices = np.random.choice(len(BCV_list), size=(n, 2))
     print(f"Done in {time.time() - start} seconds")
 
-    start = time.time()
     print(f"- Computing B, C, D vectors...", end=" ", flush=True)
+    start = time.time()
 
     # use indices to get B, C vectors
     b_vectors = BCV_values[equation_indices[:, 0]]
@@ -102,14 +108,14 @@ def free_var_search(query: str, n: int = 1_000, sim_threshold: float = 0.75):
     print(f"Done in {time.time() - start} seconds")
 
     # compute cosine similarity between D and all BCVs
-    start = time.time()
     print(f"- Computing cosine similarities...", end=" ", flush=True)
+    start = time.time()
     sims = cosine_similarity(d_vectors, BCV_values)
     print(f"Done in {time.time() - start} seconds")
 
     # get top 4 results
-    start = time.time()
     print(f"- Indexing results...", end=" ", flush=True)
+    start = time.time()
     K = 4  # worst case Q, B, C all in top 3 in which case we pick the 4th
     indices = np.argpartition(sims, -K, axis=1)[:, -K:].copy()
 
@@ -120,8 +126,8 @@ def free_var_search(query: str, n: int = 1_000, sim_threshold: float = 0.75):
     print(f"Done in {time.time() - start} seconds")
 
     results = []
-    start = time.time()
     print(f"- Mapping results to build dataframe...", end=" ", flush=True)
+    start = time.time()
     for i, (b_idx, c_idx) in tqdm(enumerate(equation_indices), total=n):
         b = BCV_list[b_idx]
         c = BCV_list[c_idx]
@@ -144,8 +150,8 @@ def free_var_search(query: str, n: int = 1_000, sim_threshold: float = 0.75):
         b_mapped = map_BCV_to_description(b)
         c_mapped = map_BCV_to_description(c)
         d_mapped = map_BCV_to_description(d)
-        eq = f"{query} + {b} - {c} = {d}"
-        eq_mapped = f"{q_mapped} + {b_mapped} - {c_mapped} = {d_mapped}"
+        eq = f"({query}) + ({b}) - ({c}) = ({d})"
+        eq_mapped = f"{q} (aka {q_mapped}) + {b} (aka {b_mapped}) - {c} (aka {c_mapped}) = {d} (aka {d_mapped})"
 
         results.append(
             (
@@ -183,6 +189,19 @@ def free_var_search(query: str, n: int = 1_000, sim_threshold: float = 0.75):
 
     # sort by similarity
     df = df.sort_values(by="Similarity", ascending=False).reset_index(drop=True)
+
+    if use_gpt != GPTVersion.NONE:
+        load_openai_key(ENV_PATH)
+        print(
+            f"- Getting {use_gpt} rationales for top 1 of {len(df)} rows...",
+            end=" ",
+            flush=True,
+        )
+        start = time.time()
+        df["Rationale"] = df["Equation (Mapped)"].apply(lambda _: "N/A")
+        df.loc[0, "Rationale"] = gpt_rationale(
+            df.loc[0, "Equation (Mapped)"], gpt_version=use_gpt
+        )
 
     print(
         f"----- Finished Free Variable Search in {time.time() - start_freevar} seconds -----"
