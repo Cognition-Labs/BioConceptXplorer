@@ -6,8 +6,8 @@ from enum import Enum
 
 class GPTVersion(str, Enum):
     NONE = "none"
-    GPT3_5 = "GPT 3.5 Turbo"
-    GPT4 = "GPT 4"
+    GPT3_5 = "gpt-3.5-turbo"
+    GPT4 = "gpt-4"
 
 
 def load_openai_key(path):
