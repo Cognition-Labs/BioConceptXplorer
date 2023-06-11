@@ -4,6 +4,16 @@ Using literature-based (PubMed) concept embeddings to explore and test biologica
 
 Streamlit Batch Processing Demo: https://shreyj1729-bioconceptxplorer-streamlitmain-50qmd1.streamlit.app/
 
+## Setting up the dev environment
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip3 install -r requirements.txt
+```
+
+The `venv` directory and the `requirements.txt` file are in the root directory of the folder so that vs-code selects them automatically on opening the project folder.
+
 Future Direction:
 
 - Pick concept in template (species, protein, mutation, disease)
