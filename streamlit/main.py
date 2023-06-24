@@ -4,7 +4,7 @@ import pandas as pd
 from typing import List, Tuple
 
 def process_input(user_input: str) -> List[str]:
-    url = f'https://shreyj1729--bioconceptvecxplorer-bert-query.modal.run/?query={user_input}&top_k=5'
+    url = f'https://degtrdg--bioconceptvecxplorer-bert-query.modal.run/?query={user_input}&top_k=5'
     r = requests.get(url)
     options: List[Tuple[str, float]] = r.json()
     options_str: List[str] = [f"{concept}| Similarity: {score}" for concept, score in options]
@@ -13,7 +13,7 @@ def process_input(user_input: str) -> List[str]:
     return options_str
 
 def get_free_var_search(query, sim_threshold, use_gpt=False):
-    base_url = 'https://shreyj1729--bioconceptvecxplorer-free-var-search.modal.run'
+    base_url = 'https://degtrdg--bioconceptvecxplorer-free-var-search.modal.run'
     n_samples = 100
     if use_gpt:
         gpt = 'gpt-4'
